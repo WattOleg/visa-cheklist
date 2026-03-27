@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Checklist</title>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f13;
+    --surface: #18181f;
+    --border: #2a2a35;
+    --accent: #7c6cfa;
+    --accent2: #c084fc;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+    --done: #4ade80;
+    --done-bg: #0d2018;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Manrope', sans-serif;
+    min-height: 100vh;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .label {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.5rem;
+  }
+
+  h1 {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1.4rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1.5rem;
+  }
+
+  .progress-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .progress-top { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.8rem; }
+  .progress-title { font-size: 0.75rem; color: var(--muted); font-weight: 600; letter-spacing: 0.05em; }
+
+  .progress-pct {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    transition: all 0.3s ease;
+  }
+
+  .bar-track { height: 8px; background: var(--border); border-radius: 99px; overflow: hidden; margin-bottom: 0.6rem; }
+
+  .bar-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0%; position: relative;
+  }
+
+  .bar-fill::after {
+    content: ''; position: absolute; top: 0; right: 0;
+    width: 20px; height: 100%;
+    background: rgba(255,255,255,0.3); border-radius: 99px; filter: blur(4px);
+  }
+
+  .progress-stats { display: flex; gap: 1rem; font-size: 0.72rem; color: var(--muted); margin-bottom: 0.5rem; flex-wrap: wrap; }
+  .stat-done { color: var(--done); font-weight: 600; }
+  .stat-skip { color: var(--muted); font-style: italic; }
+
+  .sync-status { display: flex; align-items: center; gap: 0.4rem; font-size: 0.68rem; color: var(--muted); }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); transition: background 0.3s; }
+  .sync-dot.synced { background: var(--done); }
+  .sync-dot.syncing { background: var(--accent); animation: pulse 1s infinite; }
+  .sync-dot.error { background: #f87171; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  .mode-bar { display: flex; gap: 0.5rem; margin-bottom: 1.2rem; }
+  .editor-add { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+  .editor-add.hidden { display: none; }
+  .editor-input {
+    flex: 1; min-width: 0; border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); border-radius: 8px; padding: 0.55rem 0.75rem;
+    font-family: 'Manrope', sans-serif; font-size: 0.82rem; outline: none;
+  }
+  .editor-input:focus { border-color: var(--accent); }
+  .editor-add-btn {
+    border: 1px solid var(--accent); background: var(--accent); color: #fff;
+    border-radius: 8px; padding: 0.55rem 0.85rem; font-family: 'Manrope', sans-serif;
+    font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;
+  }
+  .editor-add-btn:hover { filter: brightness(1.08); }
+  .editor-add-btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+
+  .mode-btn {
+    font-family: 'Manrope', sans-serif; font-size: 0.75rem; font-weight: 600;
+    padding: 0.45rem 1rem; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--surface); color: var(--muted); cursor: pointer; transition: all 0.2s;
+  }
+  .mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .readonly-banner {
+    display: none; background: #1a1a2e; border: 1px solid #2a2a50;
+    border-radius: 10px; padding: 0.6rem 1rem; font-size: 0.75rem;
+    color: #8888cc; margin-bottom: 1rem; text-align: center;
+  }
+  .readonly-banner.show { display: block; }
+
+  .checklist { display: flex; flex-direction: column; gap: 0.5rem; }
+
+  .item {
+    display: flex; align-items: flex-start; gap: 0.75rem;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 0.85rem 1rem;
+    transition: all 0.2s ease; user-select: none;
+  }
+
+  .item.editable { cursor: pointer; }
+  .item.editable:hover { border-color: var(--accent); background: #1c1c26; }
+
+  .item.checked { background: var(--done-bg); border-color: #166534; }
+  .item.checked .item-text { color: var(--muted); text-decoration: line-through; text-decoration-color: #4ade8060; }
+
+  .item.skipped { opacity: 0.38; border-style: dashed; }
+  .item.skipped .item-text { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--muted); }
+  .item.skipped.editable:hover { opacity: 0.6; border-color: var(--border); background: var(--surface); }
+
+  .checkbox {
+    width: 20px; height: 20px; min-width: 20px; border-radius: 6px;
+    border: 2px solid var(--border); display: flex; align-items: center;
+    justify-content: center; transition: all 0.2s ease; margin-top: 1px; background: transparent;
+  }
+  .item.editable:not(.skipped):hover .checkbox { border-color: var(--accent); }
+  .item.checked .checkbox { background: var(--done); border-color: var(--done); }
+
+  .checkbox svg { opacity: 0; transform: scale(0.5); transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  .item.checked .checkbox svg { opacity: 1; transform: scale(1); }
+
+  .item-text { font-size: 0.88rem; line-height: 1.5; color: var(--text); transition: all 0.2s; font-weight: 500; flex: 1; }
+
+  .skip-btn {
+    min-width: 22px; width: 22px; height: 22px; border-radius: 6px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); font-size: 0.72rem; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; flex-shrink: 0; margin-top: 2px; opacity: 0;
+  }
+  .item:hover .skip-btn { opacity: 1; }
+  .item.skipped .skip-btn { opacity: 1; border-color: var(--accent); color: var(--accent); font-size: 0.8rem; }
+  .skip-btn:hover { border-color: #f87171 !important; color: #f87171 !important; background: #1a0f0f !important; }
+  .item.skipped .skip-btn:hover { border-color: #4ade80 !important; color: #4ade80 !important; background: transparent !important; }
+
+  .loading { text-align: center; padding: 3rem; color: var(--muted); font-size: 0.85rem; }
+  .loading-spinner {
+    width: 32px; height: 32px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite; margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .complete-msg {
+    display: none; text-align: center; margin-top: 1.5rem; padding: 1rem;
+    border-radius: 12px; background: linear-gradient(135deg, #0d2018, #0d1822);
+    border: 1px solid #166534; font-family: 'Unbounded', sans-serif;
+    font-size: 0.75rem; color: var(--done); letter-spacing: 0.05em;
+  }
+  .complete-msg.show { display: block; }
+</style>
+</head>
+<body>
+
+<div class="label">GUO YUWEI · April-May 2026 · Croatia</div>
+<h1>Document Checklist</h1>
+
+<div class="mode-bar">
+  <button class="mode-btn active" id="btn-edit" onclick="setMode('edit')">✏️ Edit Mode</button>
+  <button class="mode-btn" id="btn-view" onclick="setMode('view')">👁 View Mode</button>
+</div>
+
+<div class="editor-add" id="editor-add">
+  <input class="editor-input" id="new-item-input" type="text" placeholder="Add a new document..." maxlength="250" />
+  <button class="editor-add-btn" id="add-item-btn" onclick="handleAddItem()">Add</button>
+</div>
+
+<div class="readonly-banner" id="readonly-banner">
+  View mode - checkboxes are disabled
+</div>
+
+<div class="progress-wrap">
+  <div class="progress-top">
+    <span class="progress-title">CHECKLIST PROGRESS</span>
+    <span class="progress-pct" id="pct">0%</span>
+  </div>
+  <div class="bar-track"><div class="bar-fill" id="bar"></div></div>
+  <div class="progress-stats">
+    <span class="stat-done" id="done-count">✓ 0 completed</span>
+    <span id="left-count">○ loading...</span>
+    <span class="stat-skip" id="skip-count"></span>
+  </div>
+  <div class="sync-status">
+    <div class="sync-dot" id="sync-dot"></div>
+    <span id="sync-label">Loading...</span>
+  </div>
+</div>
+
+<div id="list">
+  <div class="loading">
+    <div class="loading-spinner"></div>
+    Loading data from Google Sheets...
+  </div>
+</div>
+
+<div class="complete-msg" id="complete">🎉 All documents are ready for submission!</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzBDOugmEG7MJkI2xkpmodYR9jqy9yCR3YvgWm1yStiL0kVFD2n8E99pc9gx0WKT7rFSg/exec';
+
+// Data is loaded dynamically from Google Sheets.
+const DEFAULT_ITEMS = [
+  'Completed application form',
+  'Passport',
+  'Copies of all Schengen, Canadian, and U.S. visas issued in the last 5 years (if available)',
+  'One photo 35 mm x 45 mm',
+  'Copies of documents confirming legal stay in Thailand (visa, residence permit)',
+  'Property ownership certificate (if available)',
+  'Bank statement with transaction history for the last 3 months and current balance',
+  'Company registration certificate',
+  'Hotel booking confirmation',
+  'Round-trip flight booking confirmation',
+  'Detailed travel itinerary',
+  'Medical insurance'
+];
+
+let items = [...DEFAULT_ITEMS];
+let state = [];
+let mode = 'edit';
+let isAdding = false;
+
+function setMode(m) {
+  mode = m;
+  document.getElementById('btn-edit').classList.toggle('active', m === 'edit');
+  document.getElementById('btn-view').classList.toggle('active', m === 'view');
+  document.getElementById('readonly-banner').classList.toggle('show', m === 'view');
+  document.getElementById('editor-add').classList.toggle('hidden', m !== 'edit');
+  render();
+}
+
+function setSyncStatus(status, text) {
+  document.getElementById('sync-dot').className = 'sync-dot ' + status;
+  document.getElementById('sync-label').textContent = text;
+}
+
+async function loadState() {
+  setSyncStatus('syncing', 'Loading...');
+  try {
+    const res = await fetch(SCRIPT_URL);
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      const sheetItems = data
+        .map(row => (row && typeof row.item === 'string' ? row.item.trim() : ''))
+        .filter(Boolean);
+
+      items = sheetItems.length > 0 ? sheetItems : [...DEFAULT_ITEMS];
+
+      state = data.map(row => {
+        const val = row.checked;
+        if (val === 'SKIP' || val === 'skip') return 'skip';
+        return (val === true || val === 'TRUE');
+      });
+      if (state.length < items.length) {
+        state = state.concat(Array(items.length - state.length).fill(false));
+      } else if (state.length > items.length) {
+        state = state.slice(0, items.length);
+      }
+    } else {
+      items = [...DEFAULT_ITEMS];
+      state = Array(items.length).fill(false);
+    }
+    setSyncStatus('synced', 'Synced with Google Sheets');
+  } catch (e) {
+    setSyncStatus('error', 'Load failed');
+  }
+  render();
+  updateProgress();
+}
+
+async function saveRow(index, value) {
+  setSyncStatus('syncing', 'Saving...');
+  try {
+    const url = `${SCRIPT_URL}?action=save&row=${index}&checked=${value}`;
+    await fetch(url, { mode: 'no-cors' });
+    setSyncStatus('synced', 'Saved to Google Sheets');
+  } catch (e) {
+    setSyncStatus('error', 'Save failed');
+  }
+}
+
+function setAddLoading(loading) {
+  isAdding = loading;
+  const btn = document.getElementById('add-item-btn');
+  const input = document.getElementById('new-item-input');
+  btn.disabled = loading;
+  input.disabled = loading;
+  btn.textContent = loading ? 'Adding...' : 'Add';
+}
+
+async function addItemToSheet(itemText) {
+  const url = `${SCRIPT_URL}?action=add&item=${encodeURIComponent(itemText)}`;
+  await fetch(url);
+}
+
+async function handleAddItem() {
+  if (mode !== 'edit' || isAdding) return;
+
+  const input = document.getElementById('new-item-input');
+  const raw = input.value.trim();
+  if (!raw) return;
+
+  // Prevent duplicate items ignoring case and repeated spaces.
+  const normalized = raw.toLowerCase().replace(/\s+/g, ' ');
+  const exists = items.some(item => item.toLowerCase().replace(/\s+/g, ' ') === normalized);
+  if (exists) {
+    setSyncStatus('error', 'This document already exists');
+    return;
+  }
+
+  setAddLoading(true);
+  setSyncStatus('syncing', 'Adding document...');
+  try {
+    await addItemToSheet(raw);
+    await loadState();
+    const created = items.some(item => item.trim() === raw);
+    if (!created) {
+      setSyncStatus('error', 'Add is not supported by current Apps Script backend');
+      return;
+    }
+    input.value = '';
+    setSyncStatus('synced', 'Document added and synced');
+  } catch (e) {
+    setSyncStatus('error', 'Failed to add document');
+  } finally {
+    setAddLoading(false);
+  }
+}
+
+function render() {
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  const container = document.createElement('div');
+  container.className = 'checklist';
+
+  items.forEach((text, i) => {
+    const isEditable = mode === 'edit';
+    const isChecked = state[i] === true;
+    const isSkipped = state[i] === 'skip';
+
+    const div = document.createElement('div');
+    let cls = 'item';
+    if (isChecked) cls += ' checked';
+    if (isSkipped) cls += ' skipped';
+    if (isEditable) cls += ' editable';
+    div.className = cls;
+
+    div.innerHTML = `
+      <div class="checkbox">
+        <svg width="11" height="9" viewBox="0 0 11 9" fill="none">
+          <path d="M1 4L4 7.5L10 1" stroke="#0f0f13" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <span class="item-text">${text}</span>
+      ${isEditable ? `<button class="skip-btn" title="${isSkipped ? 'Return to checklist' : 'Not applicable'}">${isSkipped ? '↩' : '✕'}</button>` : ''}
+    `;
+
+    if (isEditable) {
+      div.addEventListener('click', (e) => {
+        if (e.target.closest('.skip-btn')) return;
+        if (isSkipped) return;
+        state[i] = !state[i];
+        updateProgress();
+        render();
+        saveRow(i, state[i]);
+      });
+
+      const skipBtn = div.querySelector('.skip-btn');
+      if (skipBtn) {
+        skipBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          state[i] = isSkipped ? false : 'skip';
+          updateProgress();
+          render();
+          saveRow(i, state[i] === 'skip' ? 'SKIP' : state[i]);
+        });
+      }
+    }
+
+    container.appendChild(div);
+  });
+
+  list.appendChild(container);
+}
+
+function updateProgress() {
+  const skipped = state.filter(s => s === 'skip').length;
+  const relevant = items.length - skipped;
+  const done = state.filter(s => s === true).length;
+  const pct = relevant > 0 ? Math.round((done / relevant) * 100) : 100;
+
+  document.getElementById('pct').textContent = pct + '%';
+  document.getElementById('bar').style.width = pct + '%';
+  document.getElementById('done-count').textContent = `✓ ${done} completed`;
+  document.getElementById('left-count').textContent = `○ ${relevant - done} remaining`;
+  document.getElementById('skip-count').textContent = skipped > 0 ? `— ${skipped} not applicable` : '';
+
+  const msg = document.getElementById('complete');
+  pct === 100 ? msg.classList.add('show') : msg.classList.remove('show');
+}
+
+document.getElementById('new-item-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') handleAddItem();
+});
+loadState();
+setInterval(() => { if (!isAdding) loadState(); }, 15000);
+</script>
+</body>
+</html>
